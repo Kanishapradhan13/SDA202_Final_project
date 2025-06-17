@@ -160,18 +160,18 @@ export default function ProfileScreen() {
             <Text style={styles.age}>{user.age}</Text>
           </View>
           
-          <View style={styles.infoRow}>
-            <Ionicons name="briefcase-outline" size={16} color="#666" />
+          <View style={styles.infoItem}>
+            <Ionicons name="briefcase-outline" size={18} color="#666" />
             <Text style={styles.infoText}>{user.job}</Text>
           </View>
           
-          <View style={styles.infoRow}>
-            <Ionicons name="school-outline" size={16} color="#666" />
+          <View style={styles.infoItem}>
+            <Ionicons name="school-outline" size={18} color="#666" />
             <Text style={styles.infoText}>{user.school}</Text>
           </View>
           
-          <View style={styles.infoRow}>
-            <Ionicons name="location-outline" size={16} color="#666" />
+          <View style={styles.infoItem}>
+            <Ionicons name="location-outline" size={18} color="#666" />
             <Text style={styles.infoText}>{user.location}</Text>
           </View>
         </View>
@@ -325,6 +325,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     padding: 20,
     marginBottom: 10,
+    minHeight: 150,
   },
   nameRow: {
     flexDirection: 'row',
@@ -341,15 +342,18 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: '#666',
   },
-  infoRow: {
+  infoItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
+    paddingVertical: 4,
   },
   infoText: {
     fontSize: 16,
     color: '#666',
-    marginLeft: 8,
+    marginLeft: 12,
+    flex: 1,
+    flexWrap: 'wrap',
   },
   section: {
     backgroundColor: 'white',

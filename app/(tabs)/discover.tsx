@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -11,19 +11,6 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import Animated, {
-  useAnimatedGestureHandler,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  runOnJS,
-  interpolate,
-  Extrapolate,
-} from 'react-native-reanimated';
-import {
-  PanGestureHandler,
-  PanGestureHandlerGestureEvent,
-} from 'react-native-gesture-handler';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const CARD_WIDTH = screenWidth - 40;
@@ -57,125 +44,36 @@ const mockProfiles = [
   },
 ];
 
-interface SwipeCardProps {
+interface ProfileCardProps {
   profile: typeof mockProfiles[0];
-  isTop: boolean;
-  onSwipe: (direction: 'left' | 'right') => void;
 }
 
-function SwipeCard({ profile, isTop, onSwipe }: SwipeCardProps) {
-  const translateX = useSharedValue(0);
-  const translateY = useSharedValue(0);
-  const rotate = useSharedValue(0);
-
-  const panGestureEvent = useAnimatedGestureHandler<PanGestureHandlerGestureEvent>({
-    onStart: () => {
-      // Card interaction started
-    },
-    onActive: (event) => {
-      translateX.value = event.translationX;
-      translateY.value = event.translationY;
-      rotate.value = interpolate(
-        event.translationX,
-        [-screenWidth / 2, screenWidth / 2],
-        [-15, 15],
-        Extrapolate.CLAMP
-      );
-    },
-    onEnd: (event) => {
-      const swipeThreshold = screenWidth * 0.3;
-      
-      if (Math.abs(event.translationX) > swipeThreshold) {
-        // Swipe completed
-        const direction = event.translationX > 0 ? 'right' : 'left';
-        const targetX = event.translationX > 0 ? screenWidth : -screenWidth;
-        
-        translateX.value = withSpring(targetX, { damping: 15 });
-        translateY.value = withSpring(event.translationY, { damping: 15 });
-        
-        runOnJS(onSwipe)(direction);
-      } else {
-        // Snap back
-        translateX.value = withSpring(0);
-        translateY.value = withSpring(0);
-        rotate.value = withSpring(0);
-      }
-    },
-  });
-
-  const cardStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(
-      Math.abs(translateX.value),
-      [0, screenWidth * 0.5],
-      [1, 0.5],
-      Extrapolate.CLAMP
-    );
-
-    return {
-      transform: [
-        { translateX: translateX.value },
-        { translateY: translateY.value },
-        { rotate: `${rotate.value}deg` },
-      ],
-      opacity: isTop ? opacity : 1,
-    };
-  });
-
-  const likeStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(
-      translateX.value,
-      [0, screenWidth * 0.3],
-      [0, 1],
-      Extrapolate.CLAMP
-    ),
-  }));
-
-  const nopeStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(
-      translateX.value,
-      [-screenWidth * 0.3, 0],
-      [1, 0],
-      Extrapolate.CLAMP
-    ),
-  }));
-
+function ProfileCard({ profile }: ProfileCardProps) {
   return (
-    <PanGestureHandler onGestureEvent={panGestureEvent} enabled={isTop}>
-      <Animated.View style={[styles.card, cardStyle]}>
-        <Image
-          source={{ uri: profile.photos[0] }}
-          style={styles.cardImage}
-          contentFit="cover"
-        />
-        
-        {/* Like overlay */}
-        <Animated.View style={[styles.overlay, styles.likeOverlay, likeStyle]}>
-          <Text style={styles.overlayText}>LIKE</Text>
-        </Animated.View>
-        
-        {/* Nope overlay */}
-        <Animated.View style={[styles.overlay, styles.nopeOverlay, nopeStyle]}>
-          <Text style={styles.overlayText}>NOPE</Text>
-        </Animated.View>
-
-        <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.8)']}
-          style={styles.cardGradient}
-        >
-          <View style={styles.cardInfo}>
-            <View style={styles.nameRow}>
-              <Text style={styles.name}>{profile.name}</Text>
-              <Text style={styles.age}>{profile.age}</Text>
-            </View>
-            <Text style={styles.bio}>{profile.bio}</Text>
-            <View style={styles.distanceRow}>
-              <Ionicons name="location-outline" size={16} color="white" />
-              <Text style={styles.distance}>{profile.distance} km away</Text>
-            </View>
+    <View style={styles.card}>
+      <Image
+        source={{ uri: profile.photos[0] }}
+        style={styles.cardImage}
+        contentFit="cover"
+      />
+      
+      <LinearGradient
+        colors={['transparent', 'rgba(0,0,0,0.8)']}
+        style={styles.cardGradient}
+      >
+        <View style={styles.cardInfo}>
+          <View style={styles.nameRow}>
+            <Text style={styles.name}>{profile.name}</Text>
+            <Text style={styles.age}>{profile.age}</Text>
           </View>
-        </LinearGradient>
-      </Animated.View>
-    </PanGestureHandler>
+          <Text style={styles.bio}>{profile.bio}</Text>
+          <View style={styles.distanceRow}>
+            <Ionicons name="location-outline" size={16} color="white" />
+            <Text style={styles.distance}>{profile.distance} km away </Text>
+          </View>
+        </View>
+      </LinearGradient>
+    </View>
   );
 }
 
@@ -184,65 +82,47 @@ export default function DiscoverScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const handleSwipe = (direction: 'left' | 'right') => {
-    console.log(`Swiped ${direction} on ${profiles[currentIndex]?.name}`);
+    const currentProfile = profiles[currentIndex];
+    if (!currentProfile) return;
+
+    console.log(`Swiped ${direction} on ${currentProfile.name}`);
     
-    // TODO: In Component 3, this will call the swipe service
-    // swipeService.recordSwipe(profiles[currentIndex].id, direction);
+    // Show feedback
+    if (direction === 'right') {
+      Alert.alert('Liked!', `You liked ${currentProfile.name}`);
+    } else {
+      Alert.alert('Passed', `You passed on ${currentProfile.name}`);
+    }
     
+    // Move to next profile
     setTimeout(() => {
       setCurrentIndex(prev => prev + 1);
       
       if (currentIndex >= profiles.length - 1) {
-        // Load more profiles or show "no more cards" message
         Alert.alert('No more profiles', 'Check back later for more matches!');
       }
-    }, 300);
+    }, 1000);
   };
 
-  const handleButtonSwipe = (direction: 'left' | 'right') => {
-    if (currentIndex < profiles.length) {
-      handleSwipe(direction);
-    }
-  };
+  const currentProfile = profiles[currentIndex];
 
-  const renderCards = () => {
-    return profiles.map((profile, index) => {
-      if (index < currentIndex) return null;
-      
-      const isTop = index === currentIndex;
-      const style = isTop ? {} : {
-        transform: [{ scale: 0.95 }],
-        opacity: 0.8,
-      };
-
-      return (
-        <View
-          key={profile.id}
-          style={[styles.cardContainer, style, { zIndex: profiles.length - index }]}
-        >
-          <SwipeCard
-            profile={profile}
-            isTop={isTop}
-            onSwipe={handleSwipe}
-          />
-        </View>
-      );
-    }).filter(Boolean);
-  };
-
-  if (currentIndex >= profiles.length) {
+  if (!currentProfile) {
     return (
       <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Discover</Text>
+          <TouchableOpacity style={styles.filterButton}>
+            <Ionicons name="options-outline" size={24} color="#FF4458" />
+          </TouchableOpacity>
+        </View>
+        
         <View style={styles.emptyContainer}>
           <Ionicons name="heart-outline" size={80} color="#FF4458" />
           <Text style={styles.emptyTitle}>No more profiles!</Text>
           <Text style={styles.emptySubtitle}>Check back later for more potential matches</Text>
           <TouchableOpacity 
             style={styles.refreshButton}
-            onPress={() => {
-              setCurrentIndex(0);
-              // TODO: Reload profiles from server
-            }}
+            onPress={() => setCurrentIndex(0)}
           >
             <Text style={styles.refreshButtonText}>Refresh</Text>
           </TouchableOpacity>
@@ -261,26 +141,20 @@ export default function DiscoverScreen() {
       </View>
 
       <View style={styles.cardsContainer}>
-        {renderCards()}
+        <ProfileCard profile={currentProfile} />
       </View>
 
       <View style={styles.actionButtons}>
         <TouchableOpacity
           style={[styles.actionButton, styles.passButton]}
-          onPress={() => handleButtonSwipe('left')}
+          onPress={() => handleSwipe('left')}
         >
           <Ionicons name="close" size={30} color="#FF4458" />
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.actionButton, styles.superLikeButton]}
-        >
-          <Ionicons name="star" size={24} color="#00ACED" />
-        </TouchableOpacity>
-
-        <TouchableOpacity
           style={[styles.actionButton, styles.likeButton]}
-          onPress={() => handleButtonSwipe('right')}
+          onPress={() => handleSwipe('right')}
         >
           <Ionicons name="heart" size={30} color="#4FC3F7" />
         </TouchableOpacity>
@@ -321,9 +195,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingTop: 20,
   },
-  cardContainer: {
-    position: 'absolute',
-  },
   card: {
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
@@ -339,28 +210,6 @@ const styles = StyleSheet.create({
   cardImage: {
     width: '100%',
     height: '100%',
-  },
-  overlay: {
-    position: 'absolute',
-    top: 50,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderWidth: 3,
-    borderRadius: 10,
-    transform: [{ rotate: '-20deg' }],
-  },
-  likeOverlay: {
-    right: 20,
-    borderColor: '#4FC3F7',
-  },
-  nopeOverlay: {
-    left: 20,
-    borderColor: '#FF4458',
-  },
-  overlayText: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: 'white',
   },
   cardGradient: {
     position: 'absolute',
@@ -418,7 +267,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: 15,
+    marginHorizontal: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
@@ -429,14 +278,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderWidth: 2,
     borderColor: '#FF4458',
-  },
-  superLikeButton: {
-    backgroundColor: 'white',
-    borderWidth: 2,
-    borderColor: '#00ACED',
-    width: 50,
-    height: 50,
-    borderRadius: 25,
   },
   likeButton: {
     backgroundColor: 'white',

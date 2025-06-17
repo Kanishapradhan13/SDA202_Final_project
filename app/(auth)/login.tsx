@@ -108,13 +108,13 @@ export default function LoginScreen() {
 
             <Link href="/(auth)/forgot-password" asChild>
               <TouchableOpacity style={styles.forgotPassword}>
-                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+                <Text style={styles.forgotPasswordText}>Forgot Password? </Text>
               </TouchableOpacity>
             </Link>
           </View>
 
           <View style={styles.bottomContainer}>
-            <Text style={styles.signupText}>Don't have an account?</Text>
+            <Text style={styles.signupText}>Don't have an account? </Text>
             <Link href="/(auth)/register" asChild>
               <TouchableOpacity>
                 <Text style={styles.signupLink}>Sign Up</Text>
