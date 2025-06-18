@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,45 +7,27 @@ import {
   Dimensions,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { useUserStore } from '../../src/stores/userStore';
+import { useMatchStore } from '../../src/stores/matchStore';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const CARD_WIDTH = screenWidth - 40;
 const CARD_HEIGHT = screenHeight * 0.7;
 
-// Mock data - will be replaced with real data from store in Component 2
-const mockProfiles = [
-  {
-    id: '1',
-    name: 'Sarah',
-    age: 25,
-    photos: ['https://images.unsplash.com/photo-1494790108755-2616b612b515?w=400'],
-    bio: 'Love hiking and good coffee ☕',
-    distance: 2,
-  },
-  {
-    id: '2',
-    name: 'Emma',
-    age: 23,
-    photos: ['https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400'],
-    bio: 'Artist and dog lover 🎨🐕',
-    distance: 5,
-  },
-  {
-    id: '3',
-    name: 'Jessica',
-    age: 28,
-    photos: ['https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400'],
-    bio: 'Yoga instructor and traveler ✈️🧘‍♀️',
-    distance: 3,
-  },
-];
-
 interface ProfileCardProps {
-  profile: typeof mockProfiles[0];
+  profile: {
+    id: string;
+    name: string;
+    age: number;
+    photos: string[];
+    bio?: string;
+    distance: number;
+  };
 }
 
 function ProfileCard({ profile }: ProfileCardProps) {
@@ -78,35 +60,75 @@ function ProfileCard({ profile }: ProfileCardProps) {
 }
 
 export default function DiscoverScreen() {
-  const [profiles, setProfiles] = useState(mockProfiles);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const { 
+    profiles, 
+    currentProfileIndex, 
+    isLoading, 
+    hasMore,
+    loadProfiles, 
+    swipeProfile,
+    resetProfiles 
+  } = useUserStore();
+  
+  const { addMatch } = useMatchStore();
 
-  const handleSwipe = (direction: 'left' | 'right') => {
-    const currentProfile = profiles[currentIndex];
+  // Load profiles when component mounts
+  useEffect(() => {
+    loadProfiles();
+  }, []);
+
+  const handleSwipe = async (action: 'like' | 'pass') => {
+    const currentProfile = profiles[currentProfileIndex];
     if (!currentProfile) return;
 
-    console.log(`Swiped ${direction} on ${currentProfile.name}`);
+    console.log(`Swiped ${action} on ${currentProfile.name}`);
     
-    // Show feedback
-    if (direction === 'right') {
-      Alert.alert('Liked!', `You liked ${currentProfile.name}`);
-    } else {
-      Alert.alert('Passed', `You passed on ${currentProfile.name}`);
-    }
-    
-    // Move to next profile
-    setTimeout(() => {
-      setCurrentIndex(prev => prev + 1);
+    try {
+      const match = await swipeProfile(currentProfile.id, action);
       
-      if (currentIndex >= profiles.length - 1) {
-        Alert.alert('No more profiles', 'Check back later for more matches!');
+      // Show feedback
+      if (action === 'like') {
+        if (match) {
+          Alert.alert('It\'s a Match!', `You and ${currentProfile.name} liked each other!`, [
+            { text: 'Keep Swiping', style: 'cancel' },
+            { text: 'Send Message', onPress: () => console.log('Navigate to chat') }
+          ]);
+          // Add match to match store
+          addMatch(match);
+        } else {
+          Alert.alert('Liked!', `You liked ${currentProfile.name}`);
+        }
+      } else {
+        Alert.alert('Passed', `You passed on ${currentProfile.name}`);
       }
-    }, 1000);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to record swipe. Please try again.');
+    }
   };
 
-  const currentProfile = profiles[currentIndex];
+  const currentProfile = profiles[currentProfileIndex];
 
-  if (!currentProfile) {
+  // Loading state
+  if (isLoading && profiles.length === 0) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Discover</Text>
+          <TouchableOpacity style={styles.filterButton}>
+            <Ionicons name="options-outline" size={24} color="#FF4458" />
+          </TouchableOpacity>
+        </View>
+        
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#FF4458" />
+          <Text style={styles.loadingText}>Finding amazing people for you...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // No more profiles state
+  if (!currentProfile && !hasMore) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
@@ -122,7 +144,10 @@ export default function DiscoverScreen() {
           <Text style={styles.emptySubtitle}>Check back later for more potential matches</Text>
           <TouchableOpacity 
             style={styles.refreshButton}
-            onPress={() => setCurrentIndex(0)}
+            onPress={() => {
+              resetProfiles();
+              loadProfiles();
+            }}
           >
             <Text style={styles.refreshButtonText}>Refresh</Text>
           </TouchableOpacity>
@@ -140,25 +165,31 @@ export default function DiscoverScreen() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.cardsContainer}>
-        <ProfileCard profile={currentProfile} />
-      </View>
+      {currentProfile && (
+        <>
+          <View style={styles.cardsContainer}>
+            <ProfileCard profile={currentProfile} />
+          </View>
 
-      <View style={styles.actionButtons}>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.passButton]}
-          onPress={() => handleSwipe('left')}
-        >
-          <Ionicons name="close" size={30} color="#FF4458" />
-        </TouchableOpacity>
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.passButton]}
+              onPress={() => handleSwipe('pass')}
+              disabled={isLoading}
+            >
+              <Ionicons name="close" size={30} color="#FF4458" />
+            </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.actionButton, styles.likeButton]}
-          onPress={() => handleSwipe('right')}
-        >
-          <Ionicons name="heart" size={30} color="#4FC3F7" />
-        </TouchableOpacity>
-      </View>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.likeButton]}
+              onPress={() => handleSwipe('like')}
+              disabled={isLoading}
+            >
+              <Ionicons name="heart" size={30} color="#4FC3F7" />
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
     </SafeAreaView>
   );
 }
@@ -313,5 +344,17 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 20,
+    textAlign: 'center',
   },
 });

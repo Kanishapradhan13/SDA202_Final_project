@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,12 +13,24 @@ import {
 import { Link, router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuthStore } from '../../src/stores/authStore';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  
+  const { login, isLoading, error, clearError, isAuthenticated } = useAuthStore();
+
+  useEffect(() => {
+    clearError();
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace('/(tabs)/discover');
+    }
+  }, [isAuthenticated]);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -26,20 +38,10 @@ export default function LoginScreen() {
       return;
     }
 
-    setLoading(true);
     try {
-      // TODO: Implement actual login logic in Component 3
-      console.log('Login attempt:', { email, password });
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Navigate to main app
-      router.replace('/(tabs)/discover');
+      await login({ email, password });
     } catch (error) {
-      Alert.alert('Login Failed', 'Invalid credentials');
-    } finally {
-      setLoading(false);
+      Alert.alert('Login Failed', 'Invalid credentials. Please try again.');
     }
   };
 
@@ -97,24 +99,24 @@ export default function LoginScreen() {
             </View>
 
             <TouchableOpacity
-              style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+              style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
               onPress={handleLogin}
-              disabled={loading}
+              disabled={isLoading}
             >
               <Text style={styles.loginButtonText}>
-                {loading ? 'Signing In...' : 'Sign In'}
+                {isLoading ? 'Signing In...' : 'Sign In'}
               </Text>
             </TouchableOpacity>
 
             <Link href="/(auth)/forgot-password" asChild>
               <TouchableOpacity style={styles.forgotPassword}>
-                <Text style={styles.forgotPasswordText}>Forgot Password? </Text>
+                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
               </TouchableOpacity>
             </Link>
           </View>
 
           <View style={styles.bottomContainer}>
-            <Text style={styles.signupText}>Don't have an account? </Text>
+            <Text style={styles.signupText}>Don't have an account?</Text>
             <Link href="/(auth)/register" asChild>
               <TouchableOpacity>
                 <Text style={styles.signupLink}>Sign Up</Text>
