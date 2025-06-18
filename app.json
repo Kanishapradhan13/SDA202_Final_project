@@ -1,24 +1,18 @@
 {
   "expo": {
-    "name": "TinderApp_final",
-    "slug": "TinderApp_final",
+    "name": "Tinder-app",
+    "slug": "tinder-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
+    "scheme": "tinder-app",
+    "platforms": ["ios", "android"],
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#FF4458"
       },
       "edgeToEdgeEnabled": true
     },

@@ -3,16 +3,10 @@ import { router } from 'expo-router';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useAuthStore } from '../src/stores/authStore';
 
-export default function IndexScreen() {
-  const { isAuthenticated, isLoading, loadStoredAuth } = useAuthStore();
+export default function Index() {
+  const { isAuthenticated, isLoading } = useAuthStore();
 
   useEffect(() => {
-    // Load stored authentication state
-    loadStoredAuth();
-  }, []);
-
-  useEffect(() => {
-    // Redirect based on authentication state
     if (!isLoading) {
       if (isAuthenticated) {
         router.replace('/(tabs)/discover');
@@ -34,6 +28,5 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8f8f8',
   },
 });
