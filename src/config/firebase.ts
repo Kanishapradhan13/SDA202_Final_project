@@ -1,7 +1,8 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth, connectAuthEmulator } from 'firebase/auth';
-import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
-import { getStorage, connectStorageEmulator } from 'firebase/storage';
+// src/config/firebase.ts
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 // Your Firebase project configuration
 const firebaseConfig = {
@@ -15,21 +16,19 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+let app;
+
+if (getApps().length === 0) {
+  console.log('Initializing Firebase app...');
+  app = initializeApp(firebaseConfig);
+} else {
+  console.log('Firebase app already initialized');
+  app = getApp();
+}
 
 // Initialize Firebase services
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
-
-// Configure emulators for development (optional)
-// Uncomment these lines if you want to use Firebase emulators
-/*
-if (__DEV__ && !auth._delegate._config.emulator) {
-  connectAuthEmulator(auth, 'http://localhost:9099');
-  connectFirestoreEmulator(db, 'localhost', 8080);
-  connectStorageEmulator(storage, 'localhost', 9199);
-}
-*/
 
 export default app;
